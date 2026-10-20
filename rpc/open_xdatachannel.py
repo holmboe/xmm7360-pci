@@ -123,10 +123,17 @@ pscr = r.execute('UtaMsCallPsConnectReq',
 # this gives us a handle we need
 dcr = r.execute('UtaRPCPsConnectToDatachannelReq',
                 rpc.pack_UtaRPCPsConnectToDatachannelReq())
+if dcr['content'][0] == 0xffffffff:
+    logging.error("Data channel connect failed, the modem may still hold "
+                  "an earlier session; reset it and try again")
+    sys.exit(1)
 
 csr_req = pscr['body'][:-6] + dcr['body'] + b'\x02\x04\0\0\0\0'
 
-r.execute('UtaRPCPSConnectSetupReq', csr_req)
+csr = r.execute('UtaRPCPSConnectSetupReq', csr_req)
+if csr['content'][0] != 0:
+    logging.error("Data channel setup failed")
+    sys.exit(1)
 
 if not cfg.dbus:
     sys.exit(0)
